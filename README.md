@@ -37,7 +37,7 @@ Tensorflow implements of [Conditional Generative Adversarial Nets](https://arxiv
 
 the visualization of weights:
 
-![](images/activation.png)
+![](images/activations.png)
 
 the visualization of activation:
 
