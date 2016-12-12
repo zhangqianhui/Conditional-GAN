@@ -22,19 +22,26 @@ Tensorflow implements of [Conditional Generative Adversarial Nets](https://arxiv
   Visualization:
   
     $ python main.py --operation 2
+    
+  GIF:
+  
+    $ python make_gif.py
   
 ##Result on mnist
 
-
+![](images/result.gif)
 
 
 ##Visualization:
 
+
 the visualization of weights:
+
+![](images/activation.png)
 
 the visualization of activation:
 
-
+![](images/weights.png)
 
 
 ##Reference code
