@@ -191,12 +191,12 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
                 # visualize the weights 1 or you can change weights_2 .
                 conv_weights = sess.run([tf.get_collection('weight_2')])
 
-                vis_square(visua_path , conv_weights[0][0].transpose(3, 0, 1, 2), type=0)
+                vis_square(visua_path , conv_weights[0][0].transpose(3, 0, 1, 2), type=1)
 
                 # visualize the activation 1
                 ac = sess.run([tf.get_collection('ac_2')], feed_dict={images: data_array[:64], z:sample_z , y:sample_label()})
 
-                vis_square(visua_path , ac[0][0].transpose(3, 1, 2, 0), type=1)
+                vis_square(visua_path , ac[0][0].transpose(3, 1, 2, 0), type=0)
 
                 print("the visualization finish!")
 
