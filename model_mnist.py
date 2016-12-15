@@ -45,19 +45,19 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
         images = tf.placeholder(tf.float32, [batch_size, output_size, output_size, 1])
 
         z = tf.placeholder(tf.float32, [None , sample_size])
-        z_sum = tf.histogram_summary("z", z)
+        z_sum = tf.summary.histogram("z", z)
 
         fake_images = gern_net(batch_size, z , y ,  output_size)
-        G_image = tf.image_summary("G_out", fake_images)
+        G_image = tf.summary.image("G_out", fake_images)
 
         sample_img = sample_net(sample_num , z , y  , output_size)
 
         ##the loss of gerenate network
         D_pro , D_logits = dis_net(images, y ,  weights, biases)
-        D_pro_sum = tf.histogram_summary("D_pro", D_pro)
+        D_pro_sum = tf.summary.histogram("D_pro", D_pro)
 
         G_pro, G_logits = dis_net(fake_images, y ,  weights, biases)
-        G_pro_sum = tf.histogram_summary("G_pro", G_pro)
+        G_pro_sum = tf.summary.histogram("G_pro", G_pro)
 
         D_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(G_pro, tf.zeros_like(G_logits)))
         real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_pro, tf.ones_like(D_logits)))
@@ -68,12 +68,12 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
         # d_var = filter(lambda x: x.name.startswith('dis') , tf.trainable_variables())
         # g_var = filter(lambda x: x.name.startswith('gen') , tf.trainable_variables())
 
-        loss_sum = tf.scalar_summary("D_loss", loss)
-        G_loss_sum = tf.scalar_summary("G_loss", G_fake_loss)
+        loss_sum = tf.summary.scalar("D_loss", loss)
+        G_loss_sum = tf.summary.scalar("G_loss", G_fake_loss)
 
         # merge All summaries into a single_op
-        merged_summary_op_d = tf.merge_summary([loss_sum, D_pro_sum])
-        merged_summary_op_g = tf.merge_summary([G_loss_sum, G_pro_sum, G_image, z_sum])
+        merged_summary_op_d = tf.summary.merge([loss_sum, D_pro_sum])
+        merged_summary_op_g = tf.summary.merge([G_loss_sum, G_pro_sum, G_image, z_sum])
 
         t_vars = tf.trainable_variables()
 
@@ -88,14 +88,12 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
             opti_D = tf.train.AdamOptimizer(learning_rate=learning_rate , beta1=0.5).minimize(loss , var_list=d_var)
             opti_G = tf.train.AdamOptimizer(learning_rate=learning_rate , beta1=0.5).minimize(G_fake_loss , var_list=g_var)
 
-            init = tf.initialize_all_variables()
+            init = tf.global_variables_initializer()
 
             with tf.Session() as sess:
 
                 sess.run(init)
-
-                summary_writer = tf.train.SummaryWriter(log_dir, graph=sess.graph)
-
+                summary_writer = tf.summary.FileWriter(log_dir, graph=sess.graph)
                 batch_num = 0
                 e = 0
                 step = 0
