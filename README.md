@@ -5,6 +5,12 @@ The test code for Conditional Generative Adversarial Nets using tensorflow.
 
 Tensorflow implements of [Conditional Generative Adversarial Nets](https://arxiv.org/abs/1411.1784).The paper should be the first one to introduce Conditional GANS.But they did not provide source codes.My code has some differences comparing the paper:The Gans is based on Convolution network and the code refer to [DCGAN](https://github.com/carpedm20/DCGAN-tensorflow).
 
+##Prerequisites
+
+tensorflow >=0.12
+python 2.7
+SciPy
+
 ##Usage
 
   Download mnist:
