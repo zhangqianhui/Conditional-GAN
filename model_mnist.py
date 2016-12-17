@@ -21,6 +21,7 @@ EPOCH = 5
 display_step = 1
 sample_size = 100
 y_dim = 10
+channel = 1
 
 
 def getNext_batch(rand , input , data_y , batch_num):
@@ -33,16 +34,13 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
 
         print("you use the mnist dataset")
 
-        # Get the shape of data
         data_array , data_y = load_mnist(data_name)
 
-        ## just for sample for training , 64 = 8x8 images
         sample_z = np.random.uniform(-1 , 1 , size = [sample_num , 100])
-        #sample_z = np.random.normal(0 , 0.2 , size = [sample_num , sample_size])
 
         y = tf.placeholder(tf.float32, [None , y_dim])
 
-        images = tf.placeholder(tf.float32, [batch_size, output_size, output_size, 1])
+        images = tf.placeholder(tf.float32, [batch_size, output_size, output_size, channel])
 
         z = tf.placeholder(tf.float32, [None , sample_size])
         z_sum = tf.summary.histogram("z", z)
@@ -71,7 +69,6 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
         loss_sum = tf.summary.scalar("D_loss", loss)
         G_loss_sum = tf.summary.scalar("G_loss", G_fake_loss)
 
-        # merge All summaries into a single_op
         merged_summary_op_d = tf.summary.merge([loss_sum, D_pro_sum])
         merged_summary_op_g = tf.summary.merge([G_loss_sum, G_pro_sum, G_image, z_sum])
 
@@ -158,8 +155,6 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
                 sess.run(init)
 
                 saver.restore(sess , model_path)
-
-
                 sample_z = np.random.uniform(1 , -1 , size=[sample_num , 100])
 
                 output = sess.run(sample_img , feed_dict={z:sample_z , y:sample_label()})
@@ -210,7 +205,7 @@ weights2 = {
     'wd': tf.Variable(tf.random_normal([sample_size + y_dim , 1024] , stddev=0.02) , name='genw1') ,
     'wc1': tf.Variable(tf.random_normal([1024 , 7*7*2*64], stddev=0.02) , name='genw2'),
     'wc2': tf.Variable(tf.random_normal([5 , 5 , 128 ,  128], stddev=0.02) , name='genw3'),
-    'wc3': tf.Variable(tf.random_normal([5 , 5 , 1 ,  128], stddev=0.02) , name='genw4') ,
+    'wc3': tf.Variable(tf.random_normal([5 , 5 , channel ,  128], stddev=0.02) , name='genw4') ,
 
 }
 
@@ -218,7 +213,7 @@ biases2 = {
     'bd': tf.Variable(tf.zeros([1024]) , name='genb1') ,
     'bc1': tf.Variable(tf.zeros([7*7*2*64]) , name='genb2'),
     'bc2': tf.Variable(tf.zeros([128]) , name='genb3'),
-    'bc3': tf.Variable(tf.zeros([1]) , name='genb4'),
+    'bc3': tf.Variable(tf.zeros([channel]) , name='genb4'),
 }
 
 def gern_net(batch_size , z , y , output_size):
@@ -282,7 +277,7 @@ weights = {
     'wc1': tf.Variable(tf.random_normal([5 , 5 , 11 , 10], stddev=0.02 ) , name='dis_w1'),
     'wc2': tf.Variable(tf.random_normal([5 , 5 , 10 , 64], stddev=0.02) , name='dis_w2'),
     'wc3' : tf.Variable(tf.random_normal([64*7*7 , 1024] , stddev=0.02) , name='dis_w3') ,
-    'wd' : tf.Variable(tf.random_normal([1024 , 1] , stddev=0.02 ) , name='dis_w4')
+    'wd' : tf.Variable(tf.random_normal([1024 , channel] , stddev=0.02 ) , name='dis_w4')
 }
 
 biases = {
@@ -290,7 +285,7 @@ biases = {
     'bc1': tf.Variable(tf.zeros([10]) , name = 'dis_b1') ,
     'bc2': tf.Variable(tf.zeros([64]) , name = 'dis_b2'),
     'bc3' : tf.Variable(tf.zeros([1024]) ,name =  'dis_b3') ,
-    'bd' : tf.Variable(tf.zeros([1]) ,name= 'dis_b4')
+    'bd' : tf.Variable(tf.zeros([channel]) ,name= 'dis_b4')
 
 }
 
