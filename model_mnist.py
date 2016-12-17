@@ -59,9 +59,9 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
         G_pro, G_logits = dis_net(fake_images, y ,  weights, biases)
         G_pro_sum = tf.summary.histogram("G_pro", G_pro)
 
-        D_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(G_pro, tf.zeros_like(G_logits)))
-        real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_pro, tf.ones_like(D_logits)))
-        G_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(G_pro, tf.ones_like(G_logits)))
+        D_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(G_logits , tf.zeros_like(G_pro)))
+        real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_logits, tf.ones_like(D_pro)))
+        G_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(G_logits , tf.ones_like(G_pro)))
 
         loss = real_loss + D_fake_loss
 
