@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.contrib.layers.python.layers import batch_norm
 
 #the implements of leakyRelu
 def lrelu(x , alpha = 0.2 , name="LeakyReLU"):
@@ -31,6 +32,9 @@ def conv_cond_concat(x, y):
     print y_shapes
 
     return tf.concat(3 , [x , y*tf.ones([x_shapes[0], x_shapes[1], x_shapes[2] , y_shapes[3]])])
+
+def batch_normal(input , scope="scope" , reuse=False):
+    return batch_norm(input , epsilon=1e-5, decay=0.9 , scale=True, scope=scope , reuse = reuse , updates_collections=None)
 
 
 

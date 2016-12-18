@@ -10,7 +10,7 @@ from ops import lrelu
 from ops import de_conv
 from ops import fully_connect
 from ops import conv_cond_concat
-from tensorflow.contrib.layers.python.layers import batch_norm
+from ops import batch_normal
 
 import tensorflow as tf
 import numpy as np
@@ -28,7 +28,7 @@ def getNext_batch(rand , input , data_y , batch_num):
     return input[rand + (batch_num)*batch_size : rand + (batch_num  + 1)*batch_size] \
         , data_y[rand + (batch_num)*batch_size : rand + (batch_num + 1)*batch_size]
 
-def dcgan(operation , data_name , output_size , sample_path , log_dir , model_path ,visua_path , sample_num = 64):
+def dcgan(operation , data_name , output_size , sample_path , log_dir , model_path , visua_path , sample_num = 64):
 
     if data_name ==  "mnist":
 
@@ -51,10 +51,10 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
         sample_img = sample_net(sample_num , z , y  , output_size)
 
         ##the loss of gerenate network
-        D_pro , D_logits = dis_net(images, y ,  weights, biases)
+        D_pro , D_logits = dis_net(images, y ,  weights, biases , False)
         D_pro_sum = tf.summary.histogram("D_pro", D_pro)
 
-        G_pro, G_logits = dis_net(fake_images, y ,  weights, biases)
+        G_pro, G_logits = dis_net(fake_images, y ,  weights, biases , True)
         G_pro_sum = tf.summary.histogram("G_pro", G_pro)
 
         D_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(G_logits , tf.zeros_like(G_pro)))
@@ -135,6 +135,7 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
                             print("sample!")
                             sample_images = sess.run(sample_img , feed_dict={z:sample_z , y : sample_label()})
                             save_images(sample_images , [8 , 8] , './{}/train_{:02d}_{:04d}.png'.format(sample_path , e , step))
+                            save_path = saver.save(sess, model_path)
 
                     e = e + 1
                     batch_num = 0
@@ -196,8 +197,6 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
     else:
         print("other dataset!")
 
-
-
 #####generate network
 
 weights2 = {
@@ -224,17 +223,17 @@ def gern_net(batch_size , z , y , output_size):
 
     #10 stand for the num of labels
     d1 = fully_connect(z , weights2['wd'] , biases2['bd'])
-    d1 = batch_norm(d1 , epsilon=1e-5, decay=0.9)
+    d1 = batch_normal(d1 , scope="genbn1")
     d1 = tf.nn.relu(d1)
 
     d2 = fully_connect(d1 , weights2['wc1'] , biases2['bc1'])
-    d2 = batch_norm(d2 , epsilon=1e-5 , decay=0.9)
+    d2 = batch_normal(d2 , scope="genbn2")
 
     d2 = tf.nn.relu(d2)
     d2 = tf.reshape(d2 , [batch_size , c1 , c1 , 64*2])
 
     d3 = de_conv(d2 , weights2['wc2'] , biases2['bc2'] , out_shape=[batch_size , c2 , c2 , 128])
-    d3 = batch_norm(d3 , epsilon=1e-5, decay= 0.9)
+    d3 = batch_normal(d3 , scope="genbn3")
     d3 = tf.nn.relu(d3)
 
     d4 = de_conv(d3 , weights2['wc3'] , biases2['bc3'] , out_shape=[batch_size , output_size , output_size , 1])
@@ -253,16 +252,16 @@ def sample_net(batch_size , z , y, output_size):
 
     # 10 stand for the num of labels
     d1 = fully_connect(z , weights2['wd'], biases2['bd'])
-    d1 = batch_norm(d1, epsilon=1e-5, decay=0.9)
+    d1 = batch_normal(d1, scope="genbn1" ,reuse=True)
     d1 = tf.nn.relu(d1)
 
     d2 = fully_connect(d1, weights2['wc1'], biases2['bc1'])
-    d2 = batch_norm(d2, epsilon=1e-5, decay=0.9)
+    d2 = batch_normal(d2, scope="genbn2" ,reuse=True)
     d2 = tf.nn.relu(d2)
     d2 = tf.reshape(d2, [batch_size, c1, c1 , 64 * 2])
 
     d3 = de_conv(d2, weights2['wc2'], biases2['bc2'], out_shape=[batch_size , c2, c2, 128])
-    d3 = batch_norm(d3, epsilon=1e-5, decay=0.9)
+    d3 = batch_normal(d3, scope="genbn3" ,reuse=True)
     d3 = tf.nn.relu(d3)
 
     d4 = de_conv(d3, weights2['wc3'], biases2['bc3'], out_shape=[batch_size, output_size, output_size, 1])
@@ -289,7 +288,7 @@ biases = {
 
 }
 
-def dis_net(data_array , y , weights , biases):
+def dis_net(data_array , y , weights , biases , reuse=False):
 
     # mnist data's shape is (28 , 28 , 1)
 
@@ -306,7 +305,7 @@ def dis_net(data_array , y , weights , biases):
     tf.add_to_collection('ac_1' , conv1)
 
     conv2 = conv2d(conv1 , weights['wc2']  , biases['bc2'])
-    conv2 = batch_norm(conv2 , epsilon=1e-5, decay= 0.9)
+    conv2 = batch_normal(conv2 ,scope="dis_bn1" , reuse=reuse)
     conv2 = lrelu(conv2)
 
     tf.add_to_collection('weight_2', weights['wc2'])
@@ -316,13 +315,12 @@ def dis_net(data_array , y , weights , biases):
     conv2 = tf.reshape(conv2 , [batch_size , -1])
 
     f1 = fully_connect(conv2 ,weights['wc3'] , biases['bc3'])
-    f1 = batch_norm(f1 , epsilon=1e-5 , decay=0.9)
+    f1 = batch_normal(f1 , scope="dis_bn2" , reuse=reuse)
     f1 = lrelu(f1)
 
     out = fully_connect( f1 , weights['wd'] , biases['bd'])
 
     return tf.nn.sigmoid(out) , out
-
 
 
 
