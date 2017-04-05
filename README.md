@@ -7,7 +7,7 @@ Tensorflow implements of [Conditional Generative Adversarial Nets](https://arxiv
 
 ##Prerequisites
 
-- tensorflow >=0.12
+- tensorflow >=1.0
 
 - python 2.7
 
