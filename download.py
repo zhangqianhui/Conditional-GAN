@@ -1,9 +1,7 @@
 from __future__ import print_function
 import os
 import sys
-import gzip
 import json
-import shutil
 import zipfile
 import argparse
 import subprocess

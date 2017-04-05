@@ -54,17 +54,14 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
         D_pro , D_logits = dis_net(images, y ,  weights, biases , False)
         D_pro_sum = tf.summary.histogram("D_pro", D_pro)
 
-        G_pro, G_logits = dis_net(fake_images, y ,  weights, biases , True)
+        G_pro, G_logits = dis_net(fake_images , y ,  weights, biases , True)
         G_pro_sum = tf.summary.histogram("G_pro", G_pro)
 
-        D_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(G_logits , tf.zeros_like(G_pro)))
-        real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(D_logits, tf.ones_like(D_pro)))
-        G_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(G_logits , tf.ones_like(G_pro)))
+        D_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(G_pro), logits=G_logits))
+        real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(D_pro), logits=D_logits))
+        G_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(G_pro),logits=G_logits))
 
         loss = real_loss + D_fake_loss
-
-        # d_var = filter(lambda x: x.name.startswith('dis') , tf.trainable_variables())
-        # g_var = filter(lambda x: x.name.startswith('gen') , tf.trainable_variables())
 
         loss_sum = tf.summary.scalar("D_loss", loss)
         G_loss_sum = tf.summary.scalar("G_loss", G_fake_loss)
@@ -87,10 +84,13 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
 
             init = tf.global_variables_initializer()
 
-            with tf.Session() as sess:
+            config = tf.ConfigProto()
+            config.gpu_options.allow_growth = True
+
+            with tf.Session(config=config) as sess:
 
                 sess.run(init)
-                summary_writer = tf.summary.FileWriter(log_dir, graph=sess.graph)
+                summary_writer = tf.summary.FileWriter(log_dir , graph=sess.graph)
                 batch_num = 0
                 e = 0
                 step = 0
@@ -112,13 +112,10 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
                         #batch_z = np.random.normal(0 , 0.2 , size=[batch_size , sample_size])
 
                         _, summary_str = sess.run([opti_D, merged_summary_op_d],
-                                                  feed_dict={images: realbatch_array, z: batch_z , y:real_labels})
+                                                  feed_dict={images:realbatch_array, z:batch_z , y:real_labels})
                         summary_writer.add_summary(summary_str , step)
 
                         _, summary_str = sess.run([opti_G, merged_summary_op_g], feed_dict={z: batch_z , y:real_labels})
-                        summary_writer.add_summary(summary_str , step)
-
-                        _ , summary_str = sess.run([opti_G , merged_summary_op_g], feed_dict={z: batch_z , y:real_labels})
                         summary_writer.add_summary(summary_str , step)
 
                         batch_num += 1
@@ -133,7 +130,7 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
                         if np.mod(step , 50) == 1:
 
                             print("sample!")
-                            sample_images = sess.run(sample_img , feed_dict={z:sample_z , y : sample_label()})
+                            sample_images = sess.run(sample_img , feed_dict={z:sample_z , y:sample_label()})
                             save_images(sample_images , [8 , 8] , './{}/train_{:02d}_{:04d}.png'.format(sample_path , e , step))
                             save_path = saver.save(sess, model_path)
 
@@ -202,22 +199,26 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
 weights2 = {
 
     'wd': tf.Variable(tf.random_normal([sample_size + y_dim , 1024] , stddev=0.02) , name='genw1') ,
-    'wc1': tf.Variable(tf.random_normal([1024 , 7*7*2*64], stddev=0.02) , name='genw2'),
-    'wc2': tf.Variable(tf.random_normal([5 , 5 , 128 ,  128], stddev=0.02) , name='genw3'),
-    'wc3': tf.Variable(tf.random_normal([5 , 5 , channel ,  128], stddev=0.02) , name='genw4') ,
+    'wc1': tf.Variable(tf.random_normal([1024 + y_dim , 7*7*2*64], stddev=0.02) , name='genw2'),
+    'wc2': tf.Variable(tf.random_normal([5 , 5 , 128 ,  138], stddev=0.02) , name='genw3'),
+    'wc3': tf.Variable(tf.random_normal([5 , 5 , channel ,  138], stddev=0.02) , name='genw4') ,
 
 }
 
 biases2 = {
+
     'bd': tf.Variable(tf.zeros([1024]) , name='genb1') ,
     'bc1': tf.Variable(tf.zeros([7*7*2*64]) , name='genb2'),
     'bc2': tf.Variable(tf.zeros([128]) , name='genb3'),
     'bc3': tf.Variable(tf.zeros([channel]) , name='genb4'),
+    
 }
 
 def gern_net(batch_size , z , y , output_size):
 
-    z = tf.concat(1 , [z  ,  y])
+    yb = tf.reshape(y, shape=[batch_size, 1, 1, y_dim])
+
+    z = tf.concat([z , y] , 1)
 
     c1 , c2  =  output_size/4 , output_size/2
 
@@ -226,15 +227,21 @@ def gern_net(batch_size , z , y , output_size):
     d1 = batch_normal(d1 , scope="genbn1")
     d1 = tf.nn.relu(d1)
 
+    d1 = tf.concat([d1 , y] , 1)
+
     d2 = fully_connect(d1 , weights2['wc1'] , biases2['bc1'])
     d2 = batch_normal(d2 , scope="genbn2")
 
     d2 = tf.nn.relu(d2)
     d2 = tf.reshape(d2 , [batch_size , c1 , c1 , 64*2])
 
+    d2 = conv_cond_concat(d2 , yb)
+
     d3 = de_conv(d2 , weights2['wc2'] , biases2['bc2'] , out_shape=[batch_size , c2 , c2 , 128])
     d3 = batch_normal(d3 , scope="genbn3")
     d3 = tf.nn.relu(d3)
+
+    d3 = conv_cond_concat(d3 , yb)
 
     d4 = de_conv(d3 , weights2['wc3'] , biases2['bc3'] , out_shape=[batch_size , output_size , output_size , 1])
 
@@ -243,26 +250,32 @@ def gern_net(batch_size , z , y , output_size):
 
 def sample_net(batch_size , z , y, output_size):
 
+    yb = tf.reshape(y, shape=[batch_size, 1, 1, y_dim])
 
-    z = tf.concat(1, [z , y])
+    z = tf.concat([z, y], 1)
 
-    # mnist data's shape is (28 , 28 , 1)
-    # int the paper , s = 28
     c1, c2 = output_size / 4, output_size / 2
 
     # 10 stand for the num of labels
-    d1 = fully_connect(z , weights2['wd'], biases2['bd'])
-    d1 = batch_normal(d1, scope="genbn1" ,reuse=True)
+    d1 = fully_connect(z, weights2['wd'], biases2['bd'])
+    d1 = batch_normal(d1, scope="genbn1" , reuse=True)
     d1 = tf.nn.relu(d1)
 
-    d2 = fully_connect(d1, weights2['wc1'], biases2['bc1'])
-    d2 = batch_normal(d2, scope="genbn2" ,reuse=True)
-    d2 = tf.nn.relu(d2)
-    d2 = tf.reshape(d2, [batch_size, c1, c1 , 64 * 2])
+    d1 = tf.concat([d1, y], 1)
 
-    d3 = de_conv(d2, weights2['wc2'], biases2['bc2'], out_shape=[batch_size , c2, c2, 128])
-    d3 = batch_normal(d3, scope="genbn3" ,reuse=True)
+    d2 = fully_connect(d1, weights2['wc1'], biases2['bc1'])
+    d2 = batch_normal(d2, scope="genbn2" , reuse=True)
+
+    d2 = tf.nn.relu(d2)
+    d2 = tf.reshape(d2, [batch_size, c1, c1, 64 * 2])
+
+    d2 = conv_cond_concat(d2, yb)
+
+    d3 = de_conv(d2, weights2['wc2'], biases2['bc2'], out_shape=[batch_size, c2, c2, 128])
+    d3 = batch_normal(d3, scope="genbn3" , reuse=True)
     d3 = tf.nn.relu(d3)
+
+    d3 = conv_cond_concat(d3, yb)
 
     d4 = de_conv(d3, weights2['wc3'], biases2['bc3'], out_shape=[batch_size, output_size, output_size, 1])
 
@@ -273,10 +286,10 @@ def sample_net(batch_size , z , y, output_size):
 
 weights = {
 
-    'wc1': tf.Variable(tf.random_normal([5 , 5 , 11 , 10], stddev=0.02 ) , name='dis_w1'),
-    'wc2': tf.Variable(tf.random_normal([5 , 5 , 10 , 64], stddev=0.02) , name='dis_w2'),
-    'wc3' : tf.Variable(tf.random_normal([64*7*7 , 1024] , stddev=0.02) , name='dis_w3') ,
-    'wd' : tf.Variable(tf.random_normal([1024 , channel] , stddev=0.02 ) , name='dis_w4')
+    'wc1': tf.Variable(tf.random_normal([5 , 5 , 11 , 10], stddev=0.02) , name='dis_w1'),
+    'wc2': tf.Variable(tf.random_normal([5 , 5 , 20 , 64], stddev=0.02) , name='dis_w2'),
+    'wc3' : tf.Variable(tf.random_normal([64*7*7 + y_dim , 1024] , stddev=0.02) , name='dis_w3') ,
+    'wd' : tf.Variable(tf.random_normal([1024 + y_dim , channel] , stddev=0.02) , name='dis_w4')
 }
 
 biases = {
@@ -292,20 +305,21 @@ def dis_net(data_array , y , weights , biases , reuse=False):
 
     # mnist data's shape is (28 , 28 , 1)
 
-    y = tf.reshape(y , shape=[batch_size, 1 , 1 , y_dim])
+    yb = tf.reshape(y , shape=[batch_size, 1 , 1 , y_dim])
+
     # concat
-    data_array = conv_cond_concat(data_array , y)
+    data_array = conv_cond_concat(data_array , yb)
 
     conv1 = conv2d(data_array , weights['wc1'] , biases['bc1'])
 
     tf.add_to_collection('weight_1', weights['wc1'])
-
     conv1 = lrelu(conv1)
+    conv1 = conv_cond_concat(conv1 , yb)
 
     tf.add_to_collection('ac_1' , conv1)
 
     conv2 = conv2d(conv1 , weights['wc2']  , biases['bc2'])
-    conv2 = batch_normal(conv2 ,scope="dis_bn1" , reuse=reuse)
+    conv2 = batch_normal(conv2 , scope="dis_bn1" , reuse=reuse)
     conv2 = lrelu(conv2)
 
     tf.add_to_collection('weight_2', weights['wc2'])
@@ -314,14 +328,13 @@ def dis_net(data_array , y , weights , biases , reuse=False):
 
     conv2 = tf.reshape(conv2 , [batch_size , -1])
 
-    f1 = fully_connect(conv2 ,weights['wc3'] , biases['bc3'])
+    conv2 = tf.concat([conv2 , y] , 1)
+
+    f1 = fully_connect(conv2 , weights['wc3'] , biases['bc3'])
     f1 = batch_normal(f1 , scope="dis_bn2" , reuse=reuse)
     f1 = lrelu(f1)
+    f1 = tf.concat([f1 , y] , 1)
 
-    out = fully_connect( f1 , weights['wd'] , biases['bd'])
+    out = fully_connect(f1 , weights['wd'] , biases['bd'])
 
     return tf.nn.sigmoid(out) , out
-
-
-
-

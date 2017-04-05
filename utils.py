@@ -10,7 +10,6 @@ def load_mnist(dataset_name):
     if dataset_name == 'mnist':
 
         data_dir = os.path.join("./data", dataset_name)
-
         fd = open(os.path.join(data_dir, 'train-images-idx3-ubyte'))
         loaded = np.fromfile(file=fd , dtype=np.uint8)
         trX = loaded[16:].reshape((60000, 28 , 28 ,  1)).astype(np.float)
@@ -43,7 +42,7 @@ def load_mnist(dataset_name):
 
         y_vec = np.zeros((len(y), 10), dtype=np.float)
         for i, label in enumerate(y):
-            y_vec[i, y[i]] = 1.0
+            y_vec[i, int(y[i])] = 1.0
 
         return X / 255. , y_vec
 
@@ -122,11 +121,9 @@ def vis_square(visu_path , data , type):
         plt.savefig('./{}/activation.png'.format(visu_path) , format='png')
 
 
-
 def sample_label():
     num = 64
     label_vector = np.zeros((num , 10), dtype=np.float)
     for i in range(0 , num):
         label_vector[i , i/8] = 1.0
-
     return label_vector

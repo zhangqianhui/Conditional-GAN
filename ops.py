@@ -31,7 +31,7 @@ def conv_cond_concat(x, y):
     print x_shapes
     print y_shapes
 
-    return tf.concat(3 , [x , y*tf.ones([x_shapes[0], x_shapes[1], x_shapes[2] , y_shapes[3]])])
+    return tf.concat([x , y*tf.ones([x_shapes[0], x_shapes[1], x_shapes[2] , y_shapes[3]])], 3)
 
 def batch_normal(input , scope="scope" , reuse=False):
     return batch_norm(input , epsilon=1e-5, decay=0.9 , scale=True, scope=scope , reuse = reuse , updates_collections=None)
