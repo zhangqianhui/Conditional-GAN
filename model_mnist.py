@@ -39,8 +39,6 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
         print("you use the mnist dataset")
 
         data_array , data_y = load_mnist(data_name)
-        print('Data y array shape')
-        print(data_y.shape)
 
         sample_z = np.random.uniform(-1 , 1 , size = [sample_num , 100])
 
