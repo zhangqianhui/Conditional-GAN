@@ -24,9 +24,13 @@ y_dim = 10
 channel = 1
 
 
-def getNext_batch(rand , input , data_y , batch_num):
-    return input[rand + (batch_num)*batch_size : rand + (batch_num  + 1)*batch_size] \
-        , data_y[rand + (batch_num)*batch_size : rand + (batch_num + 1)*batch_size]
+def getNext_batch(input , data_y , batch_num):
+    return input[(batch_num)*batch_size : (batch_num  + 1)*batch_size] \
+        , data_y[(batch_num)*batch_size : (batch_num + 1)*batch_size]
+
+def shuffle_data(input , data_y):
+    random_permutation = np.random.permutation(len(input))
+    return input[random_permutation], data_y[random_permutation]
 
 def dcgan(operation , data_name , output_size , sample_path , log_dir , model_path , visua_path , sample_num = 64):
 
@@ -35,6 +39,8 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
         print("you use the mnist dataset")
 
         data_array , data_y = load_mnist(data_name)
+        print('Data y array shape')
+        print(data_y.shape)
 
         sample_z = np.random.uniform(-1 , 1 , size = [sample_num , 100])
 
@@ -56,6 +62,8 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
 
         G_pro, G_logits = dis_net(fake_images , y ,  weights, biases , True)
         G_pro_sum = tf.summary.histogram("G_pro", G_pro)
+        #print 'G_pro shape'
+        #print G_logits.get_shape()
 
         D_fake_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.zeros_like(G_pro), logits=G_logits))
         real_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.ones_like(D_pro), logits=D_logits))
@@ -96,15 +104,12 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
                 step = 0
 
                 while e <= EPOCH:
-
-                    rand = np.random.randint(0 , 100)
-                    rand = 0
-
+                    data_array , data_y  = shuffle_data(data_array, data_y)
                     while batch_num < len(data_array) / batch_size:
 
                         step = step + 1
 
-                        realbatch_array , real_labels = getNext_batch(rand , data_array , data_y , batch_num)
+                        realbatch_array , real_labels = getNext_batch(data_array , data_y , batch_num)
 
                         #Get the z
 
@@ -336,5 +341,7 @@ def dis_net(data_array , y , weights , biases , reuse=False):
     f1 = tf.concat([f1 , y] , 1)
 
     out = fully_connect(f1 , weights['wd'] , biases['bd'])
+    #print 'Out Shape'
+    #print out.get_shape()
 
     return tf.nn.sigmoid(out) , out
