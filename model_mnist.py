@@ -24,9 +24,13 @@ y_dim = 10
 channel = 1
 
 
-def getNext_batch(rand , input , data_y , batch_num):
-    return input[rand + (batch_num)*batch_size : rand + (batch_num  + 1)*batch_size] \
-        , data_y[rand + (batch_num)*batch_size : rand + (batch_num + 1)*batch_size]
+def getNext_batch(input , data_y , batch_num):
+    return input[(batch_num)*batch_size : (batch_num  + 1)*batch_size] \
+        , data_y[(batch_num)*batch_size : (batch_num + 1)*batch_size]
+
+def shuffle_data(input , data_y):
+    random_permutation = np.random.permutation(len(input))
+    return input[random_permutation], data_y[random_permutation]
 
 def dcgan(operation , data_name , output_size , sample_path , log_dir , model_path , visua_path , sample_num = 64):
 
@@ -96,15 +100,12 @@ def dcgan(operation , data_name , output_size , sample_path , log_dir , model_pa
                 step = 0
 
                 while e <= EPOCH:
-
-                    rand = np.random.randint(0 , 100)
-                    rand = 0
-
+                    data_array , data_y  = shuffle_data(data_array, data_y)
                     while batch_num < len(data_array) / batch_size:
 
                         step = step + 1
 
-                        realbatch_array , real_labels = getNext_batch(rand , data_array , data_y , batch_num)
+                        realbatch_array , real_labels = getNext_batch(data_array , data_y , batch_num)
 
                         #Get the z
 
