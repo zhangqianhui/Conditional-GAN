@@ -23,15 +23,15 @@ Tensorflow implements of [Conditional Generative Adversarial Nets](https://arxiv
   
   Train:
   
-    $ python main.py --operation 0
+    $ python main.py --op 0
   
   Test:
   
-    $ python main.py --operation 1
+    $ python main.py --op 1
   
   Visualization:
   
-    $ python main.py --operation 2
+    $ python main.py --op 2
     
   GIF:
   
