@@ -19,7 +19,7 @@ Tensorflow implements of [Conditional Generative Adversarial Nets](https://arxiv
 
   Download mnist:
   
-    $ python download.py
+    $ python download.py mnist
   
   Train:
   

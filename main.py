@@ -1,15 +1,20 @@
-from model_mnist import dcgan
+from model_mnist import CGAN
 import tensorflow as tf
+from utils import Mnist
 import os
 
 flags = tf.app.flags
-flags.DEFINE_string("dataset" , "mnist" , "the dataset for read images")
+
 flags.DEFINE_string("sample_dir" , "samples_for_test" , "the dir of sample images")
-flags.DEFINE_integer("output_size" , 28 , "the size of generate image")
+flags.DEFINE_integer("output_size", 28 , "the size of generate image")
+flags.DEFINE_integer("learn_rate", 0.0002, "the learning rate for gan")
+flags.DEFINE_integer("batch_size", 64, "the batch number")
+flags.DEFINE_integer("z_dim", 100, "the dimension of noise z")
+flags.DEFINE_integer("y_dim", 10, "the dimension of condition y")
 flags.DEFINE_string("log_dir" , "/tmp/tensorflow_mnist" , "the path of tensorflow's log")
 flags.DEFINE_string("model_path" , "model/model.ckpt" , "the path of model")
 flags.DEFINE_string("visua_path" , "visualization" , "the path of visuzation images")
-flags.DEFINE_integer("operation" , 0 , "0 : train ; 1:test ; 2:visualize")
+flags.DEFINE_integer("op" , 2, "0: train ; 1:test ; 2:visualize")
 
 FLAGS = flags.FLAGS
 #
@@ -23,8 +28,26 @@ if os.path.exists(FLAGS.visua_path) == False:
     os.makedirs(FLAGS.visua_path)
 
 def main(_):
-    dcgan(operation = FLAGS.operation ,data_name=FLAGS.dataset ,  output_size=FLAGS.output_size , sample_path=FLAGS.sample_dir , log_dir=FLAGS.log_dir
-           , model_path= FLAGS.model_path , visua_path=FLAGS.visua_path)
+
+    mn_object = Mnist()
+
+    cg = CGAN(data_ob = mn_object, sample_dir = FLAGS.sample_dir, output_size=FLAGS.output_size, learn_rate=FLAGS.learn_rate
+         , batch_size=FLAGS.batch_size, z_dim=FLAGS.z_dim, y_dim=FLAGS.y_dim, log_dir=FLAGS.log_dir
+         , model_path=FLAGS.model_path, visua_path=FLAGS.visua_path)
+
+    cg.build_model()
+
+    if FLAGS.op == 0:
+
+        cg.train()
+
+    elif FLAGS.op == 1:
+
+        cg.test()
+
+    else:
+
+        cg.visual()
 
 if __name__ == '__main__':
     tf.app.run()

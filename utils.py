@@ -3,13 +3,21 @@ import numpy as np
 import scipy
 import scipy.misc
 import matplotlib.pyplot as plt
-import math
 
-def load_mnist(dataset_name):
 
-    if dataset_name == 'mnist':
+class Mnist(object):
 
-        data_dir = os.path.join("./data", dataset_name)
+    def __init__(self):
+
+        self.dataname = "Mnist"
+        self.dims = 28*28
+        self.shape = [28 , 28 , 1]
+        self.image_size = 28
+        self.data, self.data_y = self.load_mnist()
+
+    def load_mnist(self):
+
+        data_dir = os.path.join("./data", "mnist")
         fd = open(os.path.join(data_dir, 'train-images-idx3-ubyte'))
         loaded = np.fromfile(file=fd , dtype=np.uint8)
         trX = loaded[16:].reshape((60000, 28 , 28 ,  1)).astype(np.float)
@@ -33,6 +41,7 @@ def load_mnist(dataset_name):
         y = np.concatenate((trY, teY), axis=0)
 
         seed = 547
+
         np.random.seed(seed)
         np.random.shuffle(X)
         np.random.seed(seed)
@@ -44,11 +53,25 @@ def load_mnist(dataset_name):
         for i, label in enumerate(y):
             y_vec[i, int(y[i])] = 1.0
 
-        return X / 255. , y_vec
+        return X / 255., y_vec
 
-    else:
+    def getNext_batch(self, iter_num=0, batch_size=64):
 
-        print('other dataset')
+        ro_num = len(self.data) / batch_size - 1
+
+        if iter_num % ro_num == 0:
+
+            length = len(self.data)
+            perm = np.arange(length)
+            np.random.shuffle(perm)
+            self.data = np.array(self.data)
+            self.data = self.data[perm]
+            self.data_y = np.array(self.data_y)
+            self.data_y = self.data_y[perm]
+
+        return self.data[(iter_num % ro_num) * batch_size: (iter_num% ro_num + 1) * batch_size] \
+            , self.data_y[(iter_num % ro_num) * batch_size: (iter_num%ro_num + 1) * batch_size]
+
 
 def get_image(image_path , is_grayscale = False):
     return np.array(inverse_transform(imread(image_path, is_grayscale)))
