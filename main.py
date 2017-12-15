@@ -14,7 +14,7 @@ flags.DEFINE_integer("y_dim", 10, "the dimension of condition y")
 flags.DEFINE_string("log_dir" , "/tmp/tensorflow_mnist" , "the path of tensorflow's log")
 flags.DEFINE_string("model_path" , "model/model.ckpt" , "the path of model")
 flags.DEFINE_string("visua_path" , "visualization" , "the path of visuzation images")
-flags.DEFINE_integer("op" , 2, "0: train ; 1:test ; 2:visualize")
+flags.DEFINE_integer("op" , 0, "0: train ; 1:test ; 2:visualize")
 
 FLAGS = flags.FLAGS
 #
