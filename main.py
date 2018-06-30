@@ -18,13 +18,13 @@ flags.DEFINE_integer("op" , 0, "0: train ; 1:test ; 2:visualize")
 
 FLAGS = flags.FLAGS
 #
-if os.path.exists(FLAGS.sample_dir) == False:
+if not os.path.exists(FLAGS.sample_dir):
     os.makedirs(FLAGS.sample_dir)
-if os.path.exists(FLAGS.log_dir) == False:
+if not os.path.exists(FLAGS.log_dir):
     os.makedirs(FLAGS.log_dir)
-if os.path.exists(FLAGS.model_path) == False:
+if not os.path.exists(FLAGS.model_path):
     os.makedirs(FLAGS.model_path)
-if os.path.exists(FLAGS.visua_path) == False:
+if not os.path.exists(FLAGS.visua_path):
     os.makedirs(FLAGS.visua_path)
 
 def main(_):
