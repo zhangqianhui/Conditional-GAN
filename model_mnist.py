@@ -108,7 +108,7 @@ class CGAN(object):
                 step = step + 1
 
             save_path = self.saver.save(sess, self.model_path)
-            print "Model saved in file: %s" % save_path
+            print ("Model saved in file: %s" % save_path)
 
     def test(self):
 
@@ -160,7 +160,7 @@ class CGAN(object):
 
             yb = tf.reshape(y, shape=[self.batch_size, 1, 1, self.y_dim])
             z = tf.concat([z, y], 1)
-            c1, c2 = self.output_size / 4, self.output_size / 2
+            c1, c2 = int( self.output_size / 4), int(self.output_size / 2 ) 
 
             # 10 stand for the num of labels
             d1 = tf.nn.relu(batch_normal(fully_connect(z, output_size=1024, scope='gen_fully'), scope='gen_bn1'))
