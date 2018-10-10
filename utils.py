@@ -69,8 +69,8 @@ class Mnist(object):
             self.data_y = np.array(self.data_y)
             self.data_y = self.data_y[perm]
 
-        return self.data[(iter_num % ro_num) * batch_size: (iter_num% ro_num + 1) * batch_size] \
-            , self.data_y[(iter_num % ro_num) * batch_size: (iter_num%ro_num + 1) * batch_size]
+        return self.data[int(iter_num % ro_num) * batch_size: int(iter_num% ro_num + 1) * batch_size] \
+            , self.data_y[int(iter_num % ro_num) * batch_size: int(iter_num%ro_num + 1) * batch_size]
 
 
 def get_image(image_path , is_grayscale = False):
@@ -148,5 +148,5 @@ def sample_label():
     num = 64
     label_vector = np.zeros((num , 10), dtype=np.float)
     for i in range(0 , num):
-        label_vector[i , i/8] = 1.0
+        label_vector[i , int(i/8)] = 1.0
     return label_vector

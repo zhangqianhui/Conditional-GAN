@@ -1,5 +1,5 @@
 from utils import save_images, vis_square,sample_label
-
+from tensorflow.contrib.layers.python.layers import xavier_initializer
 import cv2
 from ops import conv2d, lrelu, de_conv, fully_connect, conv_cond_concat, batch_normal
 import tensorflow as tf
@@ -108,7 +108,7 @@ class CGAN(object):
                 step = step + 1
 
             save_path = self.saver.save(sess, self.model_path)
-            print "Model saved in file: %s" % save_path
+            print ("Model saved in file: %s" % save_path)
 
     def test(self):
 
@@ -160,7 +160,7 @@ class CGAN(object):
 
             yb = tf.reshape(y, shape=[self.batch_size, 1, 1, self.y_dim])
             z = tf.concat([z, y], 1)
-            c1, c2 = self.output_size / 4, self.output_size / 2
+            c1, c2 = int( self.output_size / 4), int(self.output_size / 2 ) 
 
             # 10 stand for the num of labels
             d1 = tf.nn.relu(batch_normal(fully_connect(z, output_size=1024, scope='gen_fully'), scope='gen_bn1'))
@@ -176,7 +176,8 @@ class CGAN(object):
 
             d3 = conv_cond_concat(d3, yb)
 
-            d4 = de_conv(d3, output_shape=[self.batch_size, self.output_size, self.output_size, self.channel], name='gen_deconv2')
+            d4 = de_conv(d3, output_shape=[self.batch_size, self.output_size, self.output_size, self.channel], 
+                         name='gen_deconv2', initializer = xavier_initializer())
 
             return tf.nn.sigmoid(d4)
 
@@ -212,7 +213,7 @@ class CGAN(object):
             f1 = lrelu(batch_normal(fully_connect(conv2, output_size=1024, scope='dis_fully1'), scope='dis_bn2', reuse=reuse))
             f1 = tf.concat([f1, y], 1)
 
-            out = fully_connect(f1, output_size=1, scope='dis_fully2')
+            out = fully_connect(f1, output_size=1, scope='dis_fully2',  initializer = xavier_initializer())
 
             return tf.nn.sigmoid(out), out
 
