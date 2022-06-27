@@ -1,4 +1,4 @@
-# Conditional-Gans
+# Conditional-GANs
 The test code for Conditional Generative Adversarial Nets using tensorflow.
 
 ## INTRODUCTION
